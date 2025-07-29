@@ -1,0 +1,35 @@
+# Virtual environment
+.venv/
+
+# VS Code settings
+.vscode/
+*.code-workspace
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# macOS metadata
+.DS_Store
+
+# Logs and cache
+*.log
+.cache/
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# Python egg and packaging
+*.egg-info/
+dist/
+build/
+
+# Pillow and image slicing artifacts (if any)
+*.png~
+*.bak
