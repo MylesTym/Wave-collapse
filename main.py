@@ -1,6 +1,6 @@
 from core.tiles import TILES
 from core.wfc import create_grid, get_lowest_entropy_cell, collapse_cell, propagate
-from render.matplotlib_render import render
+from render.pygame_render import render
 import matplotlib.pyplot as plt
 
 def main():

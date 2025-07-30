@@ -4,6 +4,7 @@
 
 TILES = {
     "grass": {
+        "sprite": "assets/tiles/grass.png",
         "color": "green",
         "rules": {
             "up": {"grass", "road"},
@@ -13,6 +14,7 @@ TILES = {
         }
     },
     "road": {
+        "sprite": "assets/tiles/road.png",
         "color": "gray",
         "rules": {
             "up": {"road", "grass"},
@@ -22,6 +24,7 @@ TILES = {
         }
     },
     "water": {
+        "sprite": "assets/tiles/water.png",
         "color": "blue",
         "rules": {
             "up": {"water", "grass"},
@@ -31,6 +34,7 @@ TILES = {
         }
     },
     "wall": {
+        "sprite": "assets/tiles/wall.png",
         "color": "black",
         "rules": {
             "up": {"wall", "road", "grass"},
