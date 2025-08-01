@@ -4,7 +4,7 @@ from render.pygame_render import render
 import matplotlib.pyplot as plt
 
 def main():
-    width, height = 10, 10
+    width, height = 20, 20
     tile_names = list(TILES.keys())
     grid = create_grid(width, height, tile_names)  # pass tile_names, not TILES
 

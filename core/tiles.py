@@ -7,20 +7,20 @@ TILES = {
         "sprite": "assets/tiles/grass.png",
         "color": "green",
         "rules": {
-            "up": {"grass", "road"},
-            "down": {"grass", "road"},
-            "left": {"grass", "road"},
-            "right": {"grass", "road"}
+            "up": {"grass", "stone"},
+            "down": {"grass", "stone"},
+            "left": {"grass", "stone"},
+            "right": {"grass", "stone"}
         }
     },
-    "road": {
-        "sprite": "assets/tiles/road.png",
+    "stone": {
+        "sprite": "assets/tiles/stone.png",
         "color": "gray",
         "rules": {
-            "up": {"road", "grass"},
-            "down": {"road", "grass"},
-            "left": {"road", "grass"},
-            "right": {"road", "grass"}
+            "up": {"stone", "grass"},
+            "down": {"stone", "grass"},
+            "left": {"stone", "grass"},
+            "right": {"stone", "grass"}
         }
     },
     "water": {
@@ -33,14 +33,14 @@ TILES = {
             "right": {"water", "grass"}
         }
     },
-    "wall": {
-        "sprite": "assets/tiles/wall.png",
+    "dirt": {
+        "sprite": "assets/tiles/dirt.png",
         "color": "black",
         "rules": {
-            "up": {"wall", "road", "grass"},
-            "down": {"wall", "grass"},
-            "left": {"Wall", "grass"},
-            "right": {"wall", "grass"}
+            "up": {"dirt", "stone", "grass"},
+            "down": {"dirt", "grass"},
+            "left": {"dirt", "grass"},
+            "right": {"dirt", "grass"}
         }
     }
 }
