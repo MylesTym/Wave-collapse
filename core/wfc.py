@@ -2,6 +2,7 @@
 
 import random
 from core.tiles import TILES
+from core.tiles import weighted_random_choice
 from core.cell import Cell
 
 def create_grid(w, h, tile_names):
@@ -23,7 +24,8 @@ def get_lowest_entropy_cell(grid):
 
 def collapse_cell(cell):
     cell.collapsed = True
-    cell.options = [random.choice(cell.options)]
+    selected_tile = weighted_random_choice(cell.options)
+    cell.options = [selected_tile]
 
 def get_neighbors(x, y, w, h):
     directions = {
