@@ -61,21 +61,31 @@ def handle_camera_movement(keys, camera_x, camera_y, min_x, max_x, min_y, max_y)
     
     return new_camera_x, new_camera_y
 
-def get_render_order(grid):
-    """Get tiles in proper rendering order (back to front) for isometric view"""
+def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height):
     height, width = len(grid), len(grid[0])
     tiles = []
     
-    # Collect all tile positions
+    # Calculate camera center in grid coordinates
+    screen_center_x = screen_width / 2
+    Screen_center_y = screen_height / 2
+    camera_center_x, camera_center_y = screen_to_grid(screen_center_x, Screen_center_y, offset_x=camera_offset_x, offset_y=camera_offset_y)
+    
+    cull_radius = 50
+
+
+    
     for y in range(height):
         for x in range(width):
-            tiles.append((x, y))
+            distance = abs(x - camera_center_x) + abs(y - camera_center_y)
+            if distance <= cull_radius:
+                tiles.append((x, y))
     
-    # Sort by render priority: back tiles first (smaller x+y values)
-    # Then by y coordinate to handle ties properly
+    
     tiles.sort(key=lambda pos: (pos[0] + pos[1], pos[1]))
-    
     return tiles
+
+########################
+
 
 def load_isometric_tiles():
     """Load and properly scale isometric tile sprites"""
@@ -148,8 +158,8 @@ def render(grid):
         screen.fill((50, 50, 50))  # background color
 
         # Get tiles in proper rendering order (back to front)
-        render_order = get_render_order(grid)
-
+        render_order = get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height)
+            
         for x, y in render_order:
             cell = grid[y][x]
             screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
