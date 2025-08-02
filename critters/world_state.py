@@ -24,7 +24,7 @@ class WorldState:
     def copy(self) -> 'WorldState':
         return WorldState(deepcopy(self.state))
     
-    def meets_coditions(self, conditions: Dict[str, Any]) -> bool:
+    def meets_conditions(self, conditions: Dict[str, Any]) -> bool:
         for key, expected_value in conditions.items():
             if self.get(key) != expected_value:
                 return False
