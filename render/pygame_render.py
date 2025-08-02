@@ -61,21 +61,61 @@ def handle_camera_movement(keys, camera_x, camera_y, min_x, max_x, min_y, max_y)
     
     return new_camera_x, new_camera_y
 
-def get_render_order(grid):
-    """Get tiles in proper rendering order (back to front) for isometric view"""
+def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height):
     height, width = len(grid), len(grid[0])
     tiles = []
     
-    # Collect all tile positions
+    # Calculate camera center in grid coordinates
+    screen_center_x = screen_width / 2
+    Screen_center_y = screen_height / 2
+    camera_center_x, camera_center_y = screen_to_grid(screen_center_x, Screen_center_y, offset_x=camera_offset_x, offset_y=camera_offset_y)
+    
+    cull_radius = 50
+
+
+    
     for y in range(height):
         for x in range(width):
-            tiles.append((x, y))
+            distance = abs(x - camera_center_x) + abs(y - camera_center_y)
+            if distance <= cull_radius:
+                tiles.append((x, y))
     
-    # Sort by render priority: back tiles first (smaller x+y values)
-    # Then by y coordinate to handle ties properly
+    
     tiles.sort(key=lambda pos: (pos[0] + pos[1], pos[1]))
-    
     return tiles
+
+########################
+def calculate_tile_elevation(grid, x, y):
+    """Calculate elevation based on surrounding tiles"""
+    height = 0
+    neighbors = []
+    
+    # Get surrounding tiles (8 directions)
+    for dy in [-1, 0, 1]:
+        for dx in [-1, 0, 1]:
+            if dx == 0 and dy == 0:
+                continue
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < len(grid[0]) and 0 <= ny < len(grid):
+                if grid[ny][nx].collapsed:
+                    neighbors.append(grid[ny][nx].options[0])
+    
+    # Elevation rules
+    current_tile = grid[y][x].options[0]
+    
+    if current_tile == 'grass':
+        grass_count = neighbors.count('grass')
+        if grass_count >= 5:
+            height = -5
+    elif current_tile == 'water':
+        height = 10
+    elif current_tile == 'stone':
+        stone_count = neighbors.count('stone')
+        height = -stone_count * 3
+    
+    return height
+
+#######################
 
 def load_isometric_tiles():
     """Load and properly scale isometric tile sprites"""
@@ -148,8 +188,8 @@ def render(grid):
         screen.fill((50, 50, 50))  # background color
 
         # Get tiles in proper rendering order (back to front)
-        render_order = get_render_order(grid)
-
+        render_order = get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height)
+            
         for x, y in render_order:
             cell = grid[y][x]
             screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
@@ -161,6 +201,9 @@ def render(grid):
                 tile_name = cell.options[0]
                 image = TILE_IMAGES.get(tile_name)
                 if image:
+                    elevation = calculate_tile_elevation(grid, x, y)
+                    adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) + elevation
+                    rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
                     screen.blit(image, rect)
                 else:
                     # fallback: draw magenta rect if image missing
