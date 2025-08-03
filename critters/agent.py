@@ -186,15 +186,30 @@ class GOAPAgent:
         current_pos = self.get_position()
         return abs(current_pos[0] - target_position[0]) + abs(current_pos[1] - target_position[1])
     
-    def render(self, screen: pygame.Surface, camera_offset: Tuple[int ,int] = (0, 0)):
+    def render(self, screen: pygame.Surface, camera_offset: Tuple[int, int] = (0, 0)):
         if not self.sprite:
             return
-        world_pos = self.get_world_position()
-        screen_x = int(world_pos[0] - camera_offset[0])
-        screen_y = int(world_pos[1] - camera_offset[1])
-
+        
+        # Import the isometric conversion function
+        from render.pygame_render import grid_to_screen, TILE_SPRITE_HEIGHT, TILE_HEIGHT
+        
+        # Get grid position instead of world position
+        grid_pos = self.get_position()
+        
+        # Convert grid coordinates to screen coordinates using same method as tiles
+        screen_x, screen_y = grid_to_screen(
+            grid_pos[0], 
+            grid_pos[1], 
+            offset_x=camera_offset[0], 
+            offset_y=camera_offset[1]
+        )
+        
+        # Adjust for sprite height (same as tiles do)
+        adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT)
+        
+        # Position the sprite
         self.sprite_rect.centerx = screen_x
-        self.sprite_rect.centery = screen_y
+        self.sprite_rect.centery = adjusted_y
         screen.blit(self.sprite, self.sprite_rect)
 
         if self.debug_mode:
@@ -204,10 +219,22 @@ class GOAPAgent:
         if not pygame.font.get_init():
             return
         
+        # Import the isometric conversion function
+        from render.pygame_render import grid_to_screen
+        
         font = pygame.font.Font(None, 20)
-        world_pos = self.get_world_position()
-        text_x = int(world_pos[0] - camera_offset[0])
-        text_y = int(world_pos[1] - camera_offset[1] - 40)
+        grid_pos = self.get_position()
+        
+        # Use same coordinate conversion for debug text
+        screen_x, screen_y = grid_to_screen(
+            grid_pos[0], 
+            grid_pos[1], 
+            offset_x=camera_offset[0], 
+            offset_y=camera_offset[1]
+        )
+        
+        text_x = int(screen_x)
+        text_y = int(screen_y - 40)
 
         if self.current_action:
             text = font.render(str(self.current_action), True, (255, 255, 255))

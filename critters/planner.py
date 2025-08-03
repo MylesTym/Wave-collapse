@@ -152,7 +152,9 @@ class GOAPPlanner:
                 # Look for action that can produce this effect
                 can_produce = False
                 for action in available_actions:
-                    if goal_key in action.effects and action.effects[goal_key] == goal_value:
+                    if (action.is_valid(current_state, agent) and 
+                        goal_key in action.effects and 
+                        action.effects[goal_key] == goal_value):
                         can_produce = True
                         break
                 

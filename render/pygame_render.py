@@ -67,24 +67,20 @@ def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, scree
     
     # Calculate camera center in grid coordinates
     screen_center_x = screen_width / 2
-    Screen_center_y = screen_height / 2
-    camera_center_x, camera_center_y = screen_to_grid(screen_center_x, Screen_center_y, offset_x=camera_offset_x, offset_y=camera_offset_y)
+    screen_center_y = screen_height / 2
+    camera_center_x, camera_center_y = screen_to_grid(screen_center_x, screen_center_y, offset_x=camera_offset_x, offset_y=camera_offset_y)
     
     cull_radius = 50
 
-
-    
     for y in range(height):
         for x in range(width):
             distance = abs(x - camera_center_x) + abs(y - camera_center_y)
             if distance <= cull_radius:
                 tiles.append((x, y))
     
-    
     tiles.sort(key=lambda pos: (pos[0] + pos[1], pos[1]))
     return tiles
 
-########################
 def calculate_tile_elevation(grid, x, y):
     """Calculate elevation based on surrounding tiles"""
     height = 0
@@ -114,8 +110,6 @@ def calculate_tile_elevation(grid, x, y):
         height = -stone_count * 3
     
     return height
-
-#######################
 
 def load_isometric_tiles():
     """Load and properly scale isometric tile sprites"""
@@ -153,66 +147,90 @@ def load_isometric_tiles():
     
     return TILE_IMAGES
 
-def render(grid):
-    pygame.init()
+# Cache for tile images to avoid reloading every frame
+_TILE_IMAGES_CACHE = None
 
-    width, height = len(grid[0]), len(grid)
-    screen_width, screen_height = 800, 600  # Fixed screen size
-    screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption("Wave Function Collapse - Isometric Render")
+def render(grid, screen=None, camera_offset=None):
+    global _TILE_IMAGES_CACHE
+    
+    # If no screen provided, run in standalone mode
+    if screen is None:
+        pygame.init()
 
-    # Initialize camera
-    default_x, default_y, min_x, max_x, min_y, max_y = calculate_camera_offset(
-        width, height, screen_width, screen_height
-    )
-    camera_offset_x, camera_offset_y = default_x, default_y
+        width, height = len(grid[0]), len(grid)
+        screen_width, screen_height = 800, 600
+        screen = pygame.display.set_mode((screen_width, screen_height))
+        pygame.display.set_caption("Wave Function Collapse - Isometric Render")
 
-    # Load isometric tile images
-    TILE_IMAGES = load_isometric_tiles()
-
-    clock = pygame.time.Clock()
-    running = True
-
-    while running:
-        keys = pygame.key.get_pressed()  # Get current key states
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        # Handle camera movement
-        camera_offset_x, camera_offset_y = handle_camera_movement(
-            keys, camera_offset_x, camera_offset_y, min_x, max_x, min_y, max_y
+        # Initialize camera for standalone mode
+        default_x, default_y, min_x, max_x, min_y, max_y = calculate_camera_offset(
+            width, height, screen_width, screen_height
         )
+        camera_offset_x, camera_offset_y = default_x, default_y
 
-        screen.fill((50, 50, 50))  # background color
+        # Load tile images
+        TILE_IMAGES = load_isometric_tiles()
 
-        # Get tiles in proper rendering order (back to front)
-        render_order = get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height)
+        clock = pygame.time.Clock()
+        running = True
+
+        # Standalone mode with camera movement
+        while running:
+            keys = pygame.key.get_pressed()
             
-        for x, y in render_order:
-            cell = grid[y][x]
-            screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
-            # Adjust Y position for taller sprites (centers the base of the tile)
-            adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT)
-            rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            # Handle camera movement in standalone mode
+            camera_offset_x, camera_offset_y = handle_camera_movement(
+                keys, camera_offset_x, camera_offset_y, min_x, max_x, min_y, max_y
+            )
+
+            # Render frame
+            _render_frame(grid, screen, (camera_offset_x, camera_offset_y), TILE_IMAGES)
             
-            if cell.collapsed:
-                tile_name = cell.options[0]
-                image = TILE_IMAGES.get(tile_name)
-                if image:
-                    elevation = calculate_tile_elevation(grid, x, y)
-                    adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) + elevation
-                    rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
-                    screen.blit(image, rect)
-                else:
-                    # fallback: draw magenta rect if image missing
-                    pygame.draw.rect(screen, (255, 0, 255), rect)
+            pygame.display.flip()
+            clock.tick(30)
+
+        pygame.quit()
+    
+    else:
+        # Integration mode - render single frame
+        # Cache tile images for better performance
+        if _TILE_IMAGES_CACHE is None:
+            _TILE_IMAGES_CACHE = load_isometric_tiles()
+        
+        _render_frame(grid, screen, camera_offset, _TILE_IMAGES_CACHE)
+
+def _render_frame(grid, screen, camera_offset, tile_images):
+    """Internal function to render a single frame"""
+    camera_offset_x, camera_offset_y = camera_offset
+    screen_width, screen_height = screen.get_size()
+    
+    screen.fill((50, 50, 50))  # background color
+
+    # Get tiles in proper rendering order
+    render_order = get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height)
+        
+    for x, y in render_order:
+        cell = grid[y][x]
+        screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
+        # Adjust Y position for taller sprites
+        adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT)
+        rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
+        
+        if cell.collapsed:
+            tile_name = cell.options[0]
+            image = tile_images.get(tile_name)
+            if image:
+                elevation = calculate_tile_elevation(grid, x, y)
+                adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) + elevation
+                rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
+                screen.blit(image, rect)
             else:
-                # uncollapsed cell: gray rectangle
-                pygame.draw.rect(screen, (100, 100, 100), rect)
-
-        pygame.display.flip()
-        clock.tick(30)  # limit to 30 FPS
-
-    pygame.quit()
+                # fallback: draw magenta rect if image missing
+                pygame.draw.rect(screen, (255, 0, 255), rect)
+        else:
+            # uncollapsed cell: gray rectangle
+            pygame.draw.rect(screen, (100, 100, 100), rect)

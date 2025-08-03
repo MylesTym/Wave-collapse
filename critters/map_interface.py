@@ -21,7 +21,9 @@ class WFCMapInterface:
         tile = self.get_tile_at(grid_x, grid_y)
         if tile is None:
             return "void"
-        if hasattr(tile, 'name'):
+        if hasattr(tile, 'collapsed') and tile.collapsed and hasattr(tile, 'options'):
+            return tile.options[0].lower()
+        elif hasattr(tile, 'name'):
             return tile.name.lower()
         elif hasattr(tile, 'tile_type'):
             return tile.tile_type.lower()
@@ -40,17 +42,14 @@ class WFCMapInterface:
             return False
         tile_type = self.get_tile_type(grid_x, grid_y)
 
-        #########################
         walkable_types = {
             'grass', 'dirt', 'path', 'stone', 'floor', 'ground',
             'sand'
         }
         return any(walkable in tile_type for walkable in walkable_types)
-        #########################
 
     def has_resource(self, grid_x: int, grid_y: int, resource_type: str) -> bool:
 
-        ########################
         tile_type = self.get_tile_type(grid_x, grid_y)
 
         resource_mappings = {
@@ -60,7 +59,6 @@ class WFCMapInterface:
             'food': ['wheat', 'berry',],
             'ore': ['ore', 'metal', 'iron']
         }
-        #######################
         resource_keywords = resource_mappings.get(resource_type.lower(), [])
         return any(keyword in tile_type for keyword in resource_keywords)
     

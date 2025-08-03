@@ -66,7 +66,7 @@ class Action:
             self._apply_effects(agent)
             self.state = ActionState.SUCCESS
 
-            return self.state
+        return self.state
 
     def stop(self, agent):
         self.state = ActionState.INACTIVE
@@ -266,24 +266,17 @@ class ConsumeItemAction(Action):
                 agent.world_state.set(key, value)
 
     
-# Utility functions for creating common actions
-
 def create_movement_action(target: Tuple[int, int], speed: float = 100.0) -> MoveToAction:
-    """Create a movement action to a specific position."""
     return MoveToAction(target, speed)
 
 def create_harvest_action(resource_type: str, position: Tuple[int, int], time: float = 3.0) -> HarvestResourceAction:
-    """Create a harvest action for a specific resource."""
     return HarvestResourceAction(resource_type, position, time)
 
 def create_work_action(work_type: str, time: float = 10.0, energy_cost: int = 20) -> WorkAction:
-    """Create a work action of a specific type."""
     return WorkAction(work_type, time, energy_cost)
 
 def create_rest_action(time: float = 5.0) -> RestAction:
-    """Create a rest action."""
     return RestAction(time)
 
 def create_consume_action(item: str, effect_key: str, effect_value: Any) -> ConsumeItemAction:
-    """Create a consume item action."""
     return ConsumeItemAction(item, effect_key, effect_value)
