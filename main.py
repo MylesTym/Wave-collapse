@@ -7,7 +7,7 @@ import pygame
 from render.pygame_render import handle_camera_movement, calculate_camera_offset
 
 def main():
-    width, height = 40, 40
+    width, height = 60, 60
     tile_names = list(TILES.keys())
     grid = create_grid(width, height, tile_names)
     
