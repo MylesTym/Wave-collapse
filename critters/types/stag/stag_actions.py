@@ -6,7 +6,6 @@ from ...world_state import WorldState
 
 
 class WanderAction(Action):
-    """Action for stag to wander to a random nearby location."""
     
     def __init__(self, max_wander_distance: int = 5):
         super().__init__("Wander", cost=2.0)
@@ -124,12 +123,22 @@ class WanderAction(Action):
         energy_cost = 5 * dt
         new_energy = max(0, current_energy - energy_cost)
         agent.world_state.set('energy', new_energy)
-        
+
         if new_energy < 30:
             agent.world_state.set('energy_low', True)
         else:
             agent.world_state.set('energy_low', False)
         
+        current_awareness = agent.world_state.get('awareness', 100)
+        awareness_cost = 3 * dt
+        new_awareness = max(0, current_awareness - awareness_cost)
+        agent.world_state.set('awareness', new_awareness)
+
+        if new_awareness < 20:
+            agent.world_state.set('threatened', True)
+        else:
+            agent.world_state.set('threatened', False)
+
         return self.state
 
 
@@ -167,7 +176,6 @@ class FleeAction(Action):
         return self.target_position is not None
     
     def _detect_nearby_threats(self, current_pos: Tuple[int, int], agent) -> List[Tuple[int, int]]:
-        """Simple threat detection - can be expanded later."""
         threats = []
         threat_range = 6
         
@@ -290,6 +298,16 @@ class FleeAction(Action):
         else:
             agent.world_state.set('energy_low', False)
         
+        current_awareness = agent.world_state.get('awareness', 100)
+        awareness_cost = 3 * dt
+        new_awareness = max(100, current_awareness + awareness_cost)
+        agent.world_state.set('awareness', new_awareness)
+
+        if new_awareness < 20:
+            agent.world_state.set('threatened', True)
+        else:
+            agent.world_state.set('threatened', False)
+        
         return self.state
 
 
@@ -346,5 +364,57 @@ class StagRestAction(Action):
         if self.start_time >= self.duration:
             self.state = ActionState.SUCCESS
         
+        current_awareness = agent.world_state.get('awareness', 100)
+        awareness_cost = 1 * dt
+        new_awareness = max(0, current_awareness - awareness_cost)
+        agent.world_state.set('awareness', new_awareness)
+
+        if new_awareness < 20:
+            agent.world_state.set('threatened', True)
+        else:
+            agent.world_state.set('threatened', False)
+        
         return self.state
+
+class GuardAction(Action):
+    def __init__(self, guard_duration: float = 4.0):
+        super().__init__("Guard", cost=0.5)
+        self.duration = guard_duration
+
+        self.add_precondition('threatened', True)
+        self.add_effect('threatened', False)
+        self.add_effect('activity', 'guarding')
     
+    def get_cost(self, world_state: WorldState, agent) -> float:
+        return self.cost
+    
+    def is_valid(self, world_state: WorldState, agent) -> bool:
+        return world_state.meets_conditions(self.preconditions)
+    
+    def start(self, agent) -> bool:
+        if not super().start(agent):
+            return False
+        if hasattr(agent, 'animation_system'):
+            agent.animation_system.set_animation("idle")
+        
+        return True
+    
+    def update(self, agent, dt: float) -> ActionState:
+        if self.state != ActionState.RUNNING:
+            return self.state
+        
+        self.start_time += dt
+
+        # Awareness increase
+        current_awareness = agent.world_state.get('awareness', 100)
+        awareness_restore = 30 * dt # restoration rate
+        new_awareness = min(100, current_awareness + awareness_restore)
+        agent.world_state.set('awareness', new_awareness)
+
+        if new_awareness >= 50:
+            agent.world_state.set('threatened', False)
+
+        if self.start_time >= self.duration:
+            self.state = ActionState.SUCCESS
+
+        return self.state
