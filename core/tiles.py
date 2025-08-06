@@ -14,6 +14,17 @@ TILES = {
             "right": {"grass", "stone", "dirt"}
         }
     },
+    "shrub": {
+        "sprite": "assets/resources/plants/shrub.png",
+        "color": "green",
+        "weight": 4.0,
+        "rules": {
+            "up": {"grass", "dirt", "shrub"},
+            "down": {"grass", "dirt", "shrub"},
+            "left": {"grass", "dirt", "shrub"},
+            "right": {"grass", "dirt", "shrub"}
+        }
+    },
     "stone": {
         "sprite": "assets/tiles/stone.png",
         "color": "gray",
@@ -28,7 +39,7 @@ TILES = {
     "water": {
         "sprite": "assets/tiles/water.png",
         "color": "blue",
-        "weight": 1.1,
+        "weight": 2.9,
         "rules": {
             "up": {"water", "grass"},
             "down": {"water", "grass"},
