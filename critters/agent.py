@@ -3,11 +3,14 @@ import pygame
 from .world_state import WorldState
 from .map_interface import WFCMapInterface
 from .pathfinding import AStarPathfinder
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from core.agent_manager import AgentManager
 
 class GOAPAgent:
 
     def __init__(self, agent_id: str, start_position: Tuple[int, int],
-                 map_interface: WFCMapInterface, sprite_path: str = None):
+                 map_interface: WFCMapInterface, agent_manager: 'AgentManager' = None, sprite_path: str = None):
         self.agent_id = agent_id
         self.map_interface = map_interface
         self.pathfinder = AStarPathfinder(map_interface)
@@ -36,6 +39,15 @@ class GOAPAgent:
         # Debug info
         self.debug_mode = False
         self.debug_info = {}
+
+        # Agent manager
+        self.agent_manager = agent_manager
+        if self.agent_manager:
+            self.agent_manager.register_agent(self)
+    
+    def cleanup(self):
+        if self.agent_manager:
+            self.agent_manager.unregister_agent(self)
     
     def _initialize_world_state(self, start_position: Tuple[int, int]):
         # Initial values

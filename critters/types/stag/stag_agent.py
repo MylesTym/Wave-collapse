@@ -8,8 +8,8 @@ from ...actions import ActionState
 
 class StagAgent(GOAPAgent):
     
-    def __init__(self, start_position: Tuple[int, int], map_interface, asset_path: str = "assets"):
-        super().__init__(f"stag_{start_position[0]}_{start_position[1]}", start_position, map_interface)
+    def __init__(self, start_position: Tuple[int, int], map_interface, agent_manager, asset_path: str = "assets"):
+        super().__init__(f"stag_{start_position[0]}_{start_position[1]}", start_position, map_interface, agent_manager, asset_path)
         
         self.animation_system = AnimationSystem("stag", asset_path)
         self.planner = GOAPPlanner()
@@ -263,6 +263,19 @@ class StagAgent(GOAPAgent):
     
     def get_health(self) -> float:
         return self.world_state.get('health', 100)
+    
+    def get_awareness_modifier(self) -> float:
+        if not self.agent_manager:
+            return 1.0
+        nearby_stags = self.agent_manager.get_agents_in_range_by_species(
+            self.get_position(),
+            range_distance = 8,
+            species='stag',
+            exclude_agent=self
+        )
+        if nearby_stags:
+            return 0.2
+        return 1.0
     
     def get_activity(self) -> str:
         return self.world_state.get('activity', 'idle')

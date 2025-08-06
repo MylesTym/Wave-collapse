@@ -5,11 +5,13 @@ from critters.types.stag import StagAgent
 from critters import WFCMapInterface
 import pygame
 from render.pygame_render import handle_camera_movement, calculate_camera_offset
+from core.agent_manager import AgentManager
 
 def main():
     width, height = 60, 60
     tile_names = list(TILES.keys())
     grid = create_grid(width, height, tile_names)
+    agent_manager = AgentManager()
     
     print("Generating WFC map...")
     while True:
@@ -29,8 +31,10 @@ def main():
     
     print("Creating map interface and stag...")
     map_interface = WFCMapInterface(grid, tile_size=64)
-    stag = StagAgent((width//2, height//2), map_interface)
-    stag.enable_debug(True)
+    stag1 = StagAgent((width//2, height//2), map_interface, agent_manager)
+    stag2 = StagAgent((width//2 + 3, height//2 + 3), map_interface, agent_manager)
+    stag1.enable_debug(True)
+    stag2.enable_debug(True)
     
     # Initialize camera system
     grid_width, grid_height = len(grid[0]), len(grid)
@@ -62,16 +66,15 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     running = False
         
-        stag.update(dt)
-        if hasattr(stag, 'animation_system'):
-            print(f"Animation: {stag.animation_system.current_state}")
-            print(f"Direction: {stag.animation_system.current_direction}")
-
+        stag1.update(dt)
+        stag2.update(dt)
 
         screen.fill((0, 0, 0))
         render(grid, screen, camera_offset)
-        stag.render(screen, camera_offset)
-        
+        stag1.render(screen, camera_offset)
+        stag2.render(screen, camera_offset)
+
+
         pygame.display.flip()
     
     pygame.quit()

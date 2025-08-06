@@ -32,7 +32,6 @@ class WanderAction(Action):
         return self.target_position is not None
     
     def _find_wander_target(self, current_pos: Tuple[int, int], agent) -> Optional[Tuple[int, int]]:
-        """Find a random walkable position within wander distance."""
         attempts = 0
         max_attempts = 20
         
@@ -130,7 +129,7 @@ class WanderAction(Action):
             agent.world_state.set('energy_low', False)
         
         current_awareness = agent.world_state.get('awareness', 100)
-        awareness_cost = 3 * dt
+        awareness_cost = 3 * dt * agent.get_awareness_modifier()
         new_awareness = max(0, current_awareness - awareness_cost)
         agent.world_state.set('awareness', new_awareness)
 
@@ -192,7 +191,6 @@ class FleeAction(Action):
     
     def _find_flee_target(self, current_pos: Tuple[int, int], 
                          threat_pos: Tuple[int, int], agent) -> Optional[Tuple[int, int]]:
-        """Find a position away from the threat."""
         threat_dx = current_pos[0] - threat_pos[0]
         threat_dy = current_pos[1] - threat_pos[1]
         
@@ -299,7 +297,7 @@ class FleeAction(Action):
             agent.world_state.set('energy_low', False)
         
         current_awareness = agent.world_state.get('awareness', 100)
-        awareness_cost = 3 * dt
+        awareness_cost = 3 * dt * agent.get_awareness_modifier()
         new_awareness = max(100, current_awareness + awareness_cost)
         agent.world_state.set('awareness', new_awareness)
 
@@ -365,7 +363,7 @@ class StagRestAction(Action):
             self.state = ActionState.SUCCESS
         
         current_awareness = agent.world_state.get('awareness', 100)
-        awareness_cost = 1 * dt
+        awareness_cost = 1 * dt * agent.get_awareness_modifier()
         new_awareness = max(0, current_awareness - awareness_cost)
         agent.world_state.set('awareness', new_awareness)
 
