@@ -5,27 +5,24 @@ from core.tiles import TILES
 from core.tiles import weighted_random_choice
 from core.cell import Cell
 
-def create_grid(w, h, tile_names, terrain_constraint_func=None):
+def create_grid(w, h, tile_names, terrain_constraint_func=None, terrain_data=None):
     grid = []
     for y in range(h):
         row = []
         for x in range(w):
+            # Assign elevation from terrain_data if available
+            elevation = terrain_data.get_height(x, y) if terrain_data else None
             # Apply terrain constraints if provided
             if terrain_constraint_func:
                 terrain_valid_tiles = terrain_constraint_func(x, y)
-                # Soft constraints: intersection of terrain-valid and all available tiles
                 constrained_tiles = [tile for tile in tile_names if tile in terrain_valid_tiles]
-                # Fallback to all tiles if terrain constraints are too restrictive
                 if not constrained_tiles:
                     constrained_tiles = tile_names
-                cell = Cell(constrained_tiles)
+                cell = Cell(constrained_tiles, elevation)
             else:
-                # Original behavior: all tiles available
-                cell = Cell(tile_names)
-            
+                cell = Cell(tile_names, elevation)
             row.append(cell)
         grid.append(row)
-    
     return grid
 
 def get_lowest_entropy_cell(grid):

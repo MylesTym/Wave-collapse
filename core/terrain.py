@@ -44,34 +44,29 @@ class TerrainGenerator:
 
     
     def apply_smoothing(self, terrain_data):
-  
         # Start with original heightmap
         current_heightmap = [row[:] for row in terrain_data.heightmap]
-        
         for _ in range(SMOOTHING_PASSES):
             new_heightmap = [[0 for _ in range(terrain_data.width)] 
                            for _ in range(terrain_data.height)]
-            
             for y in range(terrain_data.height):
                 for x in range(terrain_data.width):
                     total_height = 0
                     neighbor_count = 0
-                    
                     # Get weighted average of neighbors
                     for dy in [-1, 0, 1]:
                         for dx in [-1, 0, 1]:
                             nx, ny = x + dx, y + dy
                             if 0 <= nx < terrain_data.width and 0 <= ny < terrain_data.height:
-                                weight = 3 if (dx == 0 and dy == 0) else 1  # Current cell has more weight
+                                weight = 3 if (dx == 0 and dy == 0) else 1
                                 total_height += current_heightmap[ny][nx] * weight
                                 neighbor_count += weight
-                    
                     new_height = int(total_height / neighbor_count)
                     new_heightmap[y][x] = max(0, min(MAX_HEIGHT, new_height))
-            
             current_heightmap = new_heightmap
-        
-        terrain_data.smoothed_heightmap = current_heightmap
+        # Amplify variation for visualization
+        amplified_heightmap = [[int(h * 2.5) for h in row] for row in current_heightmap]
+        terrain_data.smoothed_heightmap = amplified_heightmap
     
     def determine_resource_zones(self, terrain_data):
     
@@ -187,17 +182,62 @@ def get_terrain_constraints(terrain_data, x, y):
     height = terrain_data.get_height(x, y)
     from core.tiles import TILES
     terrain_constraints = []
+
+    # Water logic: allow water at/below sea level if at least 1 neighbor is also at/below sea level
+    is_water_zone = False
+    if height <= terrain_data.sea_level:
+        water_neighbors = 0
+        for dy in [-1, 0, 1]:
+            for dx in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < terrain_data.width and 0 <= ny < terrain_data.height:
+                    n_height = terrain_data.get_height(nx, ny)
+                    if n_height <= terrain_data.sea_level:
+                        water_neighbors += 1
+        if water_neighbors >= 1:
+            is_water_zone = True
+
+    # Stone logic: only allow stone at the very top elevation and in very tight clusters
+    is_stone_zone = False
+    if height == MAX_HEIGHT:
+        stone_neighbors = 0
+        for dy in [-1, 0, 1]:
+            for dx in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < terrain_data.width and 0 <= ny < terrain_data.height:
+                    n_height = terrain_data.get_height(nx, ny)
+                    if n_height == MAX_HEIGHT:
+                        stone_neighbors += 1
+        if stone_neighbors >= 6:
+            is_stone_zone = True
+
     for tile in all_tiles:
         elev_range = TILES[tile].get('elevation_range', (0, 100))
-        if elev_range[0] <= height <= elev_range[1]:
-            terrain_constraints.append(tile)
+        if tile == 'water':
+            if is_water_zone:
+                terrain_constraints.append(tile)
+        elif tile == 'stone':
+            if is_stone_zone:
+                terrain_constraints.append(tile)
+        elif tile == 'grass':
+            # Use grass for slopes and mid elevations
+            if elev_range[0] <= height <= elev_range[1]:
+                terrain_constraints.append(tile)
+        else:
+            if elev_range[0] <= height <= elev_range[1]:
+                terrain_constraints.append(tile)
+
     # Add extra weight to elevation-preferred tiles
     for preferred_tile in base_constraints:
         if preferred_tile in terrain_constraints:
             terrain_constraints.extend([preferred_tile] * 2)
-    # Fallback: if no tiles match elevation, allow all
+    # Fallback: if no tiles match elevation, strongly prefer grass and dirt
     if not terrain_constraints:
-        terrain_constraints = all_tiles[:]
+        terrain_constraints = ['grass'] * 3 + ['dirt']
     terrain_data.constraint_cache[cache_key] = terrain_constraints
     return terrain_constraints
 #####

@@ -87,33 +87,27 @@ def load_isometric_tiles():
     TILE_IMAGES = {}
     
     for tile_name, tile_info in TILES.items():
+        sprite_path = tile_info.get("sprite")
         try:
+            if not sprite_path:
+                print(f"No sprite path for tile '{tile_name}'")
             # Load original image
-            original_image = pygame.image.load(tile_info["sprite"]).convert_alpha()
-            
+            original_image = pygame.image.load(sprite_path).convert_alpha()
             # Scale to proper isometric dimensions
-            # Width stays same, but we preserve aspect ratio for height
             scaled_image = pygame.transform.scale(original_image, (TILE_WIDTH, TILE_SPRITE_HEIGHT))
-            
             TILE_IMAGES[tile_name] = scaled_image
-            
-        except pygame.error as e:
-            print(f"Failed to load image for tile '{tile_name}': {e}")
+        except Exception as e:
+            print(f"Failed to load image for tile '{tile_name}' at '{sprite_path}': {e}")
             # Create a fallback diamond-shaped tile
             fallback_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
-            
-            # Draw a simple diamond shape as fallback
             diamond_points = [
                 (TILE_WIDTH // 2, 0),                    # Top
                 (TILE_WIDTH - 1, TILE_HEIGHT),          # Right
                 (TILE_WIDTH // 2, TILE_SPRITE_HEIGHT - 1), # Bottom
                 (0, TILE_HEIGHT)                         # Left
             ]
-            
-            # Use tile color from TILES definition
             color = pygame.Color(tile_info.get("color", "gray"))
             pygame.draw.polygon(fallback_surface, color, diamond_points)
-            
             TILE_IMAGES[tile_name] = fallback_surface
     
     return TILE_IMAGES
@@ -175,6 +169,7 @@ def render(grid, screen=None, camera_offset=None):
         _render_frame(grid, screen, camera_offset, _TILE_IMAGES_CACHE)
 
 def _render_frame(grid, screen, camera_offset, tile_images):
+    # Debug: Print collapsed status and tile type for first few cells
     camera_offset_x, camera_offset_y = camera_offset
     screen_width, screen_height = screen.get_size()
     
@@ -189,37 +184,35 @@ def _render_frame(grid, screen, camera_offset, tile_images):
     for x, y in render_order:
         cell = grid[y][x]
         screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
-        adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT)
+        elevation_offset = int(cell.elevation * 2.5) if hasattr(cell, 'elevation') and cell.elevation is not None else 0
+        adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) - elevation_offset
         rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
 
         # Shadow and elevation color calculation
-        shadow_alpha = 80
+        shadow_alpha = 30  # much lower alpha
         shadow_color = (0, 0, 0, shadow_alpha)
         base_color = (255, 255, 255)
         if terrain_data:
             height = terrain_data.get_height(x, y)
             slope = terrain_data.slopes[y][x] if hasattr(terrain_data, 'slopes') else 0
-            # Darker shadow for higher slope, lighter for flat
-            shadow_intensity = min(180, 40 + int(slope * 30))
+            shadow_intensity = min(60, 10 + int(slope * 10))  # much lower intensity
             shadow_color = (0, 0, 0, shadow_intensity)
-            # Color tint based on elevation (higher = lighter)
-            elev_factor = max(0, min(255, 120 + int(height * 4)))
+            elev_factor = max(0, min(255, 220 + int(height * 1)))  # much less color tint
             base_color = (elev_factor, elev_factor, elev_factor)
         else:
-            base_color = (200, 200, 200)
+            base_color = (220, 220, 220)
 
+        # Debug: Print rendering info for each cell
         if cell.collapsed:
             tile_name = cell.options[0]
             image = tile_images.get(tile_name)
             if image:
                 screen.blit(image, rect)
-                # Overlay shadow tint
                 shadow_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
                 shadow_surface.fill(shadow_color)
                 screen.blit(shadow_surface, rect)
-                # Overlay elevation color tint
                 color_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
-                color_surface.fill(base_color + (60,))
+                color_surface.fill(base_color + (15,))  # much lower alpha
                 screen.blit(color_surface, rect)
             else:
                 pygame.draw.rect(screen, (255, 0, 255), rect)

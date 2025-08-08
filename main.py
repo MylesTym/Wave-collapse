@@ -10,14 +10,60 @@ from core.terrain import generate_complete_terrain
 
 def main():
     width, height = 60, 60
-    
+
     print("Generating terrain data...")
     terrain_result = generate_complete_terrain(width, height)
     terrain_data = terrain_result['terrain_data']
     constraint_function = terrain_result['constraint_function']
-    
+
     tile_names = list(TILES.keys())
-    grid = create_grid(width, height, tile_names, constraint_function)
+    grid = create_grid(width, height, tile_names, constraint_function, terrain_data)
+
+    # Debug: Print elevation values for a sample of cells
+    print('Sample elevations:')
+    for y in range(0, height, max(1, height // 10)):
+        for x in range(0, width, max(1, width // 10)):
+            print(f'Cell ({x},{y}) elevation: {grid[y][x].elevation}')
+
+    agent_manager = AgentManager()
+    print(f'Grid size: {width} x {height}')
+
+    print("Generating WFC map...")
+    max_iterations = width * height
+    iteration = 0
+
+    while iteration < max_iterations:
+        pos = get_lowest_entropy_cell(grid)
+        if not pos:
+            print("Collapse Complete.")
+            break
+        x, y = pos
+        collapse_cell(grid[y][x])
+        propagate(grid)
+        iteration += 1
+
+    # Debug: Count collapsed cells after WFC
+    collapsed_count = sum(cell.collapsed for row in grid for cell in row)
+    print(f'Collapsed cells: {collapsed_count} / {width * height}')
+    # Debug: Print collapsed status and tile type for every cell
+    for y in range(height):
+            # Debug: Print entropy (number of options) for every cell before WFC
+            print('Cell entropy before WFC:')
+            for y in range(height):
+                for x in range(width):
+                    cell = grid[y][x]
+                    entropy = len(cell.options) if hasattr(cell, 'options') else 'None'
+                    print(f"Cell ({x},{y}) entropy: {entropy}")
+    for x in range(width):
+            cell = grid[y][x]
+            if hasattr(cell, 'collapsed'):
+                if cell.collapsed:
+                    tile_type = cell.options[0] if hasattr(cell, 'options') and cell.options else 'None'
+                    print(f"Cell ({x},{y}) COLLAPSED: {tile_type}")
+                else:
+                    print(f"Cell ({x},{y}) NOT COLLAPSED: options={cell.options if hasattr(cell, 'options') else 'None'}")
+            else:
+                print(f"Cell ({x},{y}) has no 'collapsed' attribute")
     agent_manager = AgentManager()
     
     print("Generating WFC map...")
