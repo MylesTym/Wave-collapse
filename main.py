@@ -6,15 +6,25 @@ from critters import WFCMapInterface
 import pygame
 from render.pygame_render import handle_camera_movement, calculate_camera_offset
 from core.agent_manager import AgentManager
+from core.terrain import generate_complete_terrain
 
 def main():
     width, height = 60, 60
+    
+    print("Generating terrain data...")
+    terrain_result = generate_complete_terrain(width, height)
+    terrain_data = terrain_result['terrain_data']
+    constraint_function = terrain_result['constraint_function']
+    
     tile_names = list(TILES.keys())
-    grid = create_grid(width, height, tile_names)
+    grid = create_grid(width, height, tile_names, constraint_function)
     agent_manager = AgentManager()
     
     print("Generating WFC map...")
-    while True:
+    max_iterations = width * height
+    iteration = 0
+
+    while iteration < max_iterations:
         pos = get_lowest_entropy_cell(grid)
         if not pos:
             print("Collapse Complete.")
@@ -22,7 +32,13 @@ def main():
         x, y = pos
         collapse_cell(grid[y][x])
         propagate(grid)
-    
+        iteration += 1
+
+    if iteration >= max_iterations:
+        print(f"WFC stopped after {max_iterations} iterations - continuing with partial result")
+    else:
+        print(f"WFC completed successfully after {iteration} iterations")
+
     print("Initializing pygame...")
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
@@ -31,12 +47,11 @@ def main():
     
     print("Creating map interface and stag...")
     map_interface = WFCMapInterface(grid, tile_size=64)
-    stag1 = StagAgent((width//2, height//2), map_interface, agent_manager)
-    stag2 = StagAgent((width//2 + 3, height//2 + 3), map_interface, agent_manager)
+    stag1 = StagAgent((width//2, height//2), map_interface, agent_manager, terrain_data)
+    stag2 = StagAgent((width//2 + 3, height//2 + 3), map_interface, agent_manager, terrain_data)
     stag1.enable_debug(True)
     stag2.enable_debug(True)
     
-    # Initialize camera system
     grid_width, grid_height = len(grid[0]), len(grid)
     screen_width, screen_height = screen.get_size()
     
@@ -44,7 +59,6 @@ def main():
         grid_width, grid_height, screen_width, screen_height
     )
     
-    # Use a list so it's mutable
     camera_offset = [default_x, default_y]
     
     print("Starting main game loop...")
@@ -52,9 +66,8 @@ def main():
     
     while running:
         dt = clock.tick(60) / 1000.0
-        keys = pygame.key.get_pressed()  # Get current key states for camera movement
+        keys = pygame.key.get_pressed()
         
-        # Handle camera movement
         camera_offset[0], camera_offset[1] = handle_camera_movement(
             keys, camera_offset[0], camera_offset[1], min_x, max_x, min_y, max_y
         )
@@ -73,7 +86,6 @@ def main():
         render(grid, screen, camera_offset)
         stag1.render(screen, camera_offset)
         stag2.render(screen, camera_offset)
-
 
         pygame.display.flip()
     

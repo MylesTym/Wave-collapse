@@ -81,35 +81,6 @@ def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, scree
     tiles.sort(key=lambda pos: (pos[0] + pos[1], pos[1]))
     return tiles
 
-def calculate_tile_elevation(grid, x, y):
-    """Calculate elevation based on surrounding tiles"""
-    height = 0
-    neighbors = []
-    
-    # Get surrounding tiles (8 directions)
-    for dy in [-1, 0, 1]:
-        for dx in [-1, 0, 1]:
-            if dx == 0 and dy == 0:
-                continue
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < len(grid[0]) and 0 <= ny < len(grid):
-                if grid[ny][nx].collapsed:
-                    neighbors.append(grid[ny][nx].options[0])
-    
-    # Elevation rules
-    current_tile = grid[y][x].options[0]
-    
-    if current_tile == 'grass':
-        grass_count = neighbors.count('grass')
-        if grass_count >= 5:
-            height = -5
-    elif current_tile == 'water':
-        height = 10
-    elif current_tile == 'stone':
-        stone_count = neighbors.count('stone')
-        height = -stone_count * 3
-    
-    return height
 
 def load_isometric_tiles():
     """Load and properly scale isometric tile sprites"""
@@ -204,7 +175,6 @@ def render(grid, screen=None, camera_offset=None):
         _render_frame(grid, screen, camera_offset, _TILE_IMAGES_CACHE)
 
 def _render_frame(grid, screen, camera_offset, tile_images):
-    """Internal function to render a single frame"""
     camera_offset_x, camera_offset_y = camera_offset
     screen_width, screen_height = screen.get_size()
     
@@ -212,25 +182,46 @@ def _render_frame(grid, screen, camera_offset, tile_images):
 
     # Get tiles in proper rendering order
     render_order = get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height)
-        
+
+    # Try to get terrain_data from grid if available
+    terrain_data = getattr(grid, 'terrain_data', None)
+
     for x, y in render_order:
         cell = grid[y][x]
         screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
-        # Adjust Y position for taller sprites
         adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT)
         rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
-        
+
+        # Shadow and elevation color calculation
+        shadow_alpha = 80
+        shadow_color = (0, 0, 0, shadow_alpha)
+        base_color = (255, 255, 255)
+        if terrain_data:
+            height = terrain_data.get_height(x, y)
+            slope = terrain_data.slopes[y][x] if hasattr(terrain_data, 'slopes') else 0
+            # Darker shadow for higher slope, lighter for flat
+            shadow_intensity = min(180, 40 + int(slope * 30))
+            shadow_color = (0, 0, 0, shadow_intensity)
+            # Color tint based on elevation (higher = lighter)
+            elev_factor = max(0, min(255, 120 + int(height * 4)))
+            base_color = (elev_factor, elev_factor, elev_factor)
+        else:
+            base_color = (200, 200, 200)
+
         if cell.collapsed:
             tile_name = cell.options[0]
             image = tile_images.get(tile_name)
             if image:
-                elevation = calculate_tile_elevation(grid, x, y)
-                adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) + elevation
-                rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
                 screen.blit(image, rect)
+                # Overlay shadow tint
+                shadow_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
+                shadow_surface.fill(shadow_color)
+                screen.blit(shadow_surface, rect)
+                # Overlay elevation color tint
+                color_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
+                color_surface.fill(base_color + (60,))
+                screen.blit(color_surface, rect)
             else:
-                # fallback: draw magenta rect if image missing
                 pygame.draw.rect(screen, (255, 0, 255), rect)
         else:
-            # uncollapsed cell: gray rectangle
             pygame.draw.rect(screen, (100, 100, 100), rect)

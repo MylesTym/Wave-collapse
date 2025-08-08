@@ -8,9 +8,10 @@ from ...actions import ActionState
 
 class StagAgent(GOAPAgent):
     
-    def __init__(self, start_position: Tuple[int, int], map_interface, agent_manager, asset_path: str = "assets"):
+    def __init__(self, start_position: Tuple[int, int], map_interface, agent_manager, terrain_data, asset_path: str = "assets"):
         super().__init__(f"stag_{start_position[0]}_{start_position[1]}", start_position, map_interface, agent_manager, asset_path)
         
+        self.terrain_data = terrain_data
         self.animation_system = AnimationSystem("stag", asset_path)
         self.planner = GOAPPlanner()
         
@@ -180,15 +181,9 @@ class StagAgent(GOAPAgent):
             self._update_debug_info()
     
     def get_current_tile_elevation(self, grid_x: int, grid_y: int):
-        from render.pygame_render import calculate_tile_elevation
-        
-        # Get the WFC grid data from the map interface
-        if hasattr(self.map_interface, 'map_data'):
-            grid = self.map_interface.map_data
-            if (0 <= grid_x < len(grid[0]) and 0 <= grid_y < len(grid)):
-                return calculate_tile_elevation(grid, grid_x, grid_y)
-        
-        return 0  # Default elevation if out of bounds or no data
+        if (0 <= grid_x < self.terrain_data.width and 0 <= grid_y < self.terrain_data.height):
+            return self.terrain_data.get_height(grid_x, grid_y)
+        return 0
     
     def render(self, screen: pygame.Surface, camera_offset: Tuple[int, int] = (0, 0)):
         from render.pygame_render import TILE_SPRITE_HEIGHT, TILE_HEIGHT
