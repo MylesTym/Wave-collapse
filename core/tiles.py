@@ -11,7 +11,11 @@ TILES = {
             "up": {"grass", "stone", "dirt"},
             "down": {"grass", "stone", "dirt"},
             "left": {"grass", "stone", "dirt"},
-            "right": {"grass", "stone", "dirt"}
+            "right": {"grass", "stone", "dirt"},
+            "up_left": {"grass", "stone", "dirt"},
+            "up_right": {"grass", "stone", "dirt"},
+            "down_left": {"grass", "stone", "dirt"},
+            "down_right": {"grass", "stone", "dirt"}
         }
     },
     "shrub": {
@@ -22,7 +26,11 @@ TILES = {
             "up": {"grass", "dirt", "shrub"},
             "down": {"grass", "dirt", "shrub"},
             "left": {"grass", "dirt", "shrub"},
-            "right": {"grass", "dirt", "shrub"}
+            "right": {"grass", "dirt", "shrub"},
+            "up_left": {"grass", "dirt", "shrub"},
+            "up_right": {"grass", "dirt", "shrub"},
+            "down_left": {"grass", "dirt", "shrub"},
+            "down_right": {"grass", "dirt", "shrub"}
         }
     },
     "stone": {
@@ -30,10 +38,14 @@ TILES = {
         "color": "gray",
         "weight": 0.6,
         "rules": {
-            "up": {"stone", "grass"},
-            "down": {"stone", "grass"},
-            "left": {"stone", "grass"},
-            "right": {"stone", "grass"}
+            "up": {"stone", "dirt"},
+            "down": {"stone", "dirt"},
+            "left": {"stone", "dirt"},
+            "right": {"stone", "dirt"},
+            "up_left": {"stone", "dirt"},
+            "up_right": {"stone", "dirt"},
+            "down_left": {"stone", "dirt"},
+            "down_right": {"stone", "dirt"}
         }
     },
     "water": {
@@ -44,7 +56,11 @@ TILES = {
             "up": {"water", "grass"},
             "down": {"water", "grass"},
             "left": {"water", "grass"},
-            "right": {"water", "grass"}
+            "right": {"water", "grass"},
+            "up_left": {"water", "grass"},
+            "up_right": {"water", "grass"},
+            "down_left": {"water", "grass"},
+            "down_right": {"water", "grass"}
         }
     },
     "dirt": {
@@ -55,7 +71,11 @@ TILES = {
             "up": {"dirt", "stone", "grass", "water"},
             "down": {"dirt", "grass", "stone", "water"},
             "left": {"dirt", "grass", "stone", "water"},
-            "right": {"dirt", "grass", "stone", "water"}
+            "right": {"dirt", "grass", "stone", "water"},
+            "up_left": {"dirt", "grass", "stone", "water"},
+            "up_right": {"dirt", "grass", "stone", "water"},
+            "down_left": {"dirt", "grass", "stone", "water"},
+            "down_right": {"dirt", "grass", "stone", "water"}
         }
     }
 }

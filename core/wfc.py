@@ -27,19 +27,32 @@ def collapse_cell(cell):
     selected_tile = weighted_random_choice(cell.options)
     cell.options = [selected_tile]
 
-def get_neighbors(x, y, w, h):
-    directions = {
-        "up":    (0, -1),
-        "down":  (0, 1),
-        "left":  (-1, 0),
-        "right": (1, 0)
-    }
+def get_neighbors(x, y, w, h, use_8_directions=True):
+    if use_8_directions:
+        directions = {
+            "up":    (0, -1),
+            "down":  (0, 1),
+            "left":  (-1, 0),
+            "right": (1, 0),
+            "up_left": (-1, -1),
+            "up_right": (1, -1),
+            "down_left": (-1, 1),
+            "down_right": (1, 1)
+        }
+    else:
+        directions = {
+            "up": (0, -1),
+            "down": (0, 1),
+            "left": ( -1, 0),
+            "right": (1, 0)
+        }
+    
     for dir, (dx, dy) in directions.items():
         nx, ny = x + dx, y + dy
         if 0 <= nx < w and 0 <= ny < h:
             yield dir, nx, ny
 
-def propagate(grid):
+def propagate(grid, use_8_directions=True):
     w, h = len(grid[0]), len(grid)
     changed = True
     while changed:
@@ -52,7 +65,7 @@ def propagate(grid):
                 tile_name = cell.options[0]
                 rules = TILES[tile_name]["rules"]
 
-                for dir, nx, ny in get_neighbors(x, y, w, h):
+                for dir, nx, ny in get_neighbors(x, y, w, h, use_8_directions):
                     neighbor = grid[ny][nx]
                     if neighbor.collapsed:
                         continue
@@ -64,17 +77,17 @@ def propagate(grid):
                         if len(new_opts) == 1:
                             collapse_cell(neighbor)
 
-def step(grid, render_fn):
+def step(grid, render_fn, use_8_directions=True):
     pos = get_lowest_entropy_cell(grid)
     if pos:
         x, y = pos
         collapse_cell(grid[y][x])
-        propagate(grid)
+        propagate(grid, use_8_directions)
         render_fn(grid)
     else:
         print("Collapse Complete.")
 
-def run_full_collapse(grid, render_fn):
+def run_full_collapse(grid, render_fn, use_8_directions=True):
     while True:
         pos = get_lowest_entropy_cell(grid)
         if not pos:
@@ -84,7 +97,7 @@ def run_full_collapse(grid, render_fn):
         propagate(grid)
     render_fn(grid)
 
-def is_fully_collapsed(grid):
+def is_fully_collapsed(grid, use_8_directions):
     for row in grid:
         for cell in row:
             if not cell.collapsed:
