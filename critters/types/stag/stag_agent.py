@@ -7,11 +7,11 @@ from ...actions import ActionState
 
 
 class StagAgent(GOAPAgent):
-    """Animated stag agent with wandering and resting behaviors."""
     
-    def __init__(self, start_position: Tuple[int, int], map_interface, asset_path: str = "assets"):
-        super().__init__(f"stag_{start_position[0]}_{start_position[1]}", start_position, map_interface)
+    def __init__(self, start_position: Tuple[int, int], map_interface, agent_manager, terrain_data, asset_path: str = "assets"):
+        super().__init__(f"stag_{start_position[0]}_{start_position[1]}", start_position, map_interface, agent_manager, asset_path)
         
+        self.terrain_data = terrain_data
         self.animation_system = AnimationSystem("stag", asset_path)
         self.planner = GOAPPlanner()
         
@@ -20,27 +20,27 @@ class StagAgent(GOAPAgent):
         self._setup_stag_goals()
     
     def _initialize_stag_state(self):
-        """Initialize stag-specific world state variables."""
         self.world_state.set('energy', 100)
         self.world_state.set('energy_low', False)
         self.world_state.set('health', 100)
+        self.world_state.set('awareness', 100)
         self.world_state.set('activity', 'idle')
         self.world_state.set('threatened', False)
         self.world_state.set('species', 'stag')
     
     def _setup_stag_actions(self):
-        """Add stag-specific actions to available actions."""
-        from .stag_actions import WanderAction, FleeAction, StagRestAction
+        from .stag_actions import WanderAction, FleeAction, StagRestAction, GuardAction
         
-        self.add_action(WanderAction(max_wander_distance=6))
+        self.add_action(WanderAction(max_wander_distance=15))
         self.add_action(StagRestAction(rest_duration=5.0))
         self.add_action(FleeAction(flee_distance=10))
+        self.add_action(GuardAction(guard_duration=3.0))
     
     def _setup_stag_goals(self):
-        """Set up stag behavior goals."""
         goals = [
             {'activity': 'wandering'},
-            {'energy_low': False}
+            {'energy_low': False},
+            {'threatened': False}
         ]
         self.set_goals(goals)
         
@@ -48,7 +48,6 @@ class StagAgent(GOAPAgent):
             self.current_goal = goals[0]
     
     def _update_current_action(self, dt: float):
-        """Update the currently executing action."""
         if not self.current_action:
             return
         
@@ -66,7 +65,6 @@ class StagAgent(GOAPAgent):
             self.current_action = None
     
     def _replan(self):
-        """Create a new plan using GOAP planner."""
         # Always check for goal changes first
         self._select_next_goal()
         
@@ -109,11 +107,14 @@ class StagAgent(GOAPAgent):
         print(f"Plan: {[action.name for action in self.current_plan]}")
     
     def _select_next_goal(self):
-        """Select appropriate goal based on current state."""
+        threatened = self.world_state.get('threatened', False)
         energy_low = self.world_state.get('energy_low', False)
         current_activity = self.world_state.get('activity', 'idle')
         
-        if energy_low:
+        if threatened:
+            self.current_goal = {'threatened': False}
+            print(f"Threatened, setting guard goal: {self.current_goal}")
+        elif energy_low:
             self.current_goal = {'energy_low': False}
             print(f"Energy is low, setting rest goal: {self.current_goal}")
         else:
@@ -126,7 +127,6 @@ class StagAgent(GOAPAgent):
                 self.current_goal = {'activity': 'wandering'}
     
     def update(self, dt: float):
-        """Update stag agent behavior and animation."""
         if not self.planning_enabled:
             return
         
@@ -181,16 +181,9 @@ class StagAgent(GOAPAgent):
             self._update_debug_info()
     
     def get_current_tile_elevation(self, grid_x: int, grid_y: int):
-        """Get the elevation of the tile at the given grid position."""
-        from render.pygame_render import calculate_tile_elevation
-        
-        # Get the WFC grid data from the map interface
-        if hasattr(self.map_interface, 'map_data'):
-            grid = self.map_interface.map_data
-            if (0 <= grid_x < len(grid[0]) and 0 <= grid_y < len(grid)):
-                return calculate_tile_elevation(grid, grid_x, grid_y)
-        
-        return 0  # Default elevation if out of bounds or no data
+        if (0 <= grid_x < self.terrain_data.width and 0 <= grid_y < self.terrain_data.height):
+            return self.terrain_data.get_height(grid_x, grid_y)
+        return 0
     
     def render(self, screen: pygame.Surface, camera_offset: Tuple[int, int] = (0, 0)):
         from render.pygame_render import TILE_SPRITE_HEIGHT, TILE_HEIGHT
@@ -230,7 +223,6 @@ class StagAgent(GOAPAgent):
             
         
     def _render_debug_info(self, screen: pygame.Surface, camera_offset: Tuple[int, int], elevation: int = 0):
-        """Render debug information above the stag using world coordinates."""
         if not pygame.font.get_init():
             return
         
@@ -250,9 +242,10 @@ class StagAgent(GOAPAgent):
         text_y = int(screen_y - 50 + elevation)
         
         energy = self.world_state.get('energy', 100)
+        awareness = self.world_state.get('awareness', 100)
         activity = self.world_state.get('activity', 'idle')
         
-        info_text = f"E:{int(energy)} A:{activity}"
+        info_text = f"E:{int(energy)} AW:{int(awareness)} A:{activity}"
         text = font.render(info_text, True, (255, 255, 255))
         screen.blit(text, (text_x - text.get_width() // 2, text_y))
         
@@ -261,29 +254,36 @@ class StagAgent(GOAPAgent):
             screen.blit(action_text, (text_x - action_text.get_width() // 2, text_y + 20))
     
     def get_energy(self) -> float:
-        """Get current energy level."""
         return self.world_state.get('energy', 100)
     
     def get_health(self) -> float:
-        """Get current health level."""
         return self.world_state.get('health', 100)
     
+    def get_awareness_modifier(self) -> float:
+        if not self.agent_manager:
+            return 1.0
+        nearby_stags = self.agent_manager.get_agents_in_range_by_species(
+            self.get_position(),
+            range_distance = 8,
+            species='stag',
+            exclude_agent=self
+        )
+        if nearby_stags:
+            return 0.2
+        return 1.0
+    
     def get_activity(self) -> str:
-        """Get current activity."""
         return self.world_state.get('activity', 'idle')
     
     def is_energy_low(self) -> bool:
-        """Check if energy is low."""
         return self.world_state.get('energy_low', False)
     
     def damage(self, amount: float):
-        """Take damage."""
         current_health = self.world_state.get('health', 100)
         new_health = max(0, current_health - amount)
         self.world_state.set('health', new_health)
     
     def set_threatened(self, threatened: bool, threat_position: Tuple[int, int] = None):
-        """Set threat status."""
         self.world_state.set('threatened', threatened)
         if threat_position:
             self.world_state.set('threat_position', threat_position)

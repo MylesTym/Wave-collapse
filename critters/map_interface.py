@@ -44,7 +44,7 @@ class WFCMapInterface:
 
         walkable_types = {
             'grass', 'dirt', 'path', 'stone', 'floor', 'ground',
-            'sand'
+            'sand', 'shrub'
         }
         return any(walkable in tile_type for walkable in walkable_types)
 

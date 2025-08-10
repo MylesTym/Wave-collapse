@@ -7,44 +7,81 @@ TILES = {
         "sprite": "assets/tiles/grass.png",
         "color": "green",
         "weight": 2.0,
+        "elevation_range": (2, 20),
         "rules": {
-            "up": {"grass", "stone"},
-            "down": {"grass", "stone"},
-            "left": {"grass", "stone"},
-            "right": {"grass", "stone"}
+            "up": {"grass", "stone", "dirt", "water", "shrub"},
+            "down": {"grass", "stone", "dirt", "water", "shrub"},
+            "left": {"grass", "stone", "dirt", "water", "shrub"},
+            "right": {"grass", "stone", "dirt", "water", "shrub"},
+            "up_left": {"grass", "stone", "dirt", "water", "shrub"},
+            "up_right": {"grass", "stone", "dirt", "water", "shrub"},
+            "down_left": {"grass", "stone", "dirt", "water", "shrub"},
+            "down_right": {"grass", "stone", "dirt", "water", "shrub"}
+        }
+    },
+    "shrub": {
+        "sprite": "assets/resources/plants/shrub.png",
+        "color": "green",
+        "weight": 4.0,
+        "elevation_range": (5, 22),
+        "rules": {
+            "up": {"grass", "dirt", "shrub", "water"},
+            "down": {"grass", "dirt", "shrub", "water"},
+            "left": {"grass", "dirt", "shrub", "water"},
+            "right": {"grass", "dirt", "shrub", "water"},
+            "up_left": {"grass", "dirt", "shrub", "water"},
+            "up_right": {"grass", "dirt", "shrub", "water"},
+            "down_left": {"grass", "dirt", "shrub", "water"},
+            "down_right": {"grass", "dirt", "shrub", "water"}
         }
     },
     "stone": {
         "sprite": "assets/tiles/stone.png",
         "color": "gray",
-        "weight": 0.8,
+        "weight": 0.6,
+        "elevation_range": (15, 30),
         "rules": {
-            "up": {"stone", "grass"},
-            "down": {"stone", "grass"},
-            "left": {"stone", "grass"},
-            "right": {"stone", "grass"}
+            "up": {"stone", "dirt", "grass", "water", "dirt"},
+            "down": {"stone", "dirt", "grass", "water", "dirt"},
+            "left": {"stone", "dirt", "grass", "water", "dirt"},
+            "right": {"stone", "dirt", "grass", "water", "dirt"},
+            "up_left": {"stone", "dirt", "grass", "water", "dirt"},
+            "up_right": {"stone", "dirt", "grass", "water", "dirt"},
+            "down_left": {"stone", "dirt", "grass", "water", "dirt"},
+            "down_right": {"stone", "dirt", "grass", "water", "dirt"}
         }
     },
     "water": {
         "sprite": "assets/tiles/water.png",
         "color": "blue",
-        "weight": 0.8,
+        "weight": 2.9,
+        "elevation_range": (0, 2),
         "rules": {
-            "up": {"water", "grass"},
-            "down": {"water", "grass"},
-            "left": {"water", "grass"},
-            "right": {"water", "grass"}
+            "up": {"water", "grass", "dirt", "shrub","stone"},
+            "down": {"water", "grass", "dirt", "shrub", "stone"},
+            "left": {"water", "grass", "dirt", "shrub", "stone"},
+            "left": {"water", "grass", "dirt", "shrub", "stone"},
+            "right": {"water", "grass", "dirt", "shrub", "stone"},
+            "up_left": {"water", "grass", "dirt", "shrub", "stone"},
+            "up_right": {"water", "grass", "dirt", "shrub", "stone"},
+            "down_left": {"water", "grass", "dirt", "shrub", "stone"},
+            "down_right": {"water", "grass", "dirt", "shrub", "stone"}
         }
     },
     "dirt": {
         "sprite": "assets/tiles/dirt.png",
         "color": "black",
-        "weight": 1.0,
+        "weight": 1.3,
+        "elevation_range": (3, 18),
         "rules": {
-            "up": {"dirt", "stone", "grass"},
-            "down": {"dirt", "grass"},
-            "left": {"dirt", "grass"},
-            "right": {"dirt", "grass"}
+            "up": {"dirt", "stone", "grass", "water", "shrub"},
+            "down": {"dirt", "grass", "stone", "water", "shrub"},
+            "left": {"dirt", "grass", "stone", "water", "shrub"},
+            "right": {"dirt", "grass", "stone", "water", "shrub"},
+            "up_left": {"dirt", "grass", "stone", "water", "shrub"},
+            "up_right": {"dirt", "grass", "stone", "water", "shrub"},
+            "down_left": {"dirt", "grass", "stone", "water" "shrub"},
+            "down_right": {"dirt", "grass", "stone", "water", "shrub"}
         }
     }
 }

@@ -81,68 +81,33 @@ def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, scree
     tiles.sort(key=lambda pos: (pos[0] + pos[1], pos[1]))
     return tiles
 
-def calculate_tile_elevation(grid, x, y):
-    """Calculate elevation based on surrounding tiles"""
-    height = 0
-    neighbors = []
-    
-    # Get surrounding tiles (8 directions)
-    for dy in [-1, 0, 1]:
-        for dx in [-1, 0, 1]:
-            if dx == 0 and dy == 0:
-                continue
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < len(grid[0]) and 0 <= ny < len(grid):
-                if grid[ny][nx].collapsed:
-                    neighbors.append(grid[ny][nx].options[0])
-    
-    # Elevation rules
-    current_tile = grid[y][x].options[0]
-    
-    if current_tile == 'grass':
-        grass_count = neighbors.count('grass')
-        if grass_count >= 5:
-            height = -5
-    elif current_tile == 'water':
-        height = 10
-    elif current_tile == 'stone':
-        stone_count = neighbors.count('stone')
-        height = -stone_count * 3
-    
-    return height
 
 def load_isometric_tiles():
     """Load and properly scale isometric tile sprites"""
     TILE_IMAGES = {}
     
     for tile_name, tile_info in TILES.items():
+        sprite_path = tile_info.get("sprite")
         try:
+            if not sprite_path:
+                print(f"No sprite path for tile '{tile_name}'")
             # Load original image
-            original_image = pygame.image.load(tile_info["sprite"]).convert_alpha()
-            
+            original_image = pygame.image.load(sprite_path).convert_alpha()
             # Scale to proper isometric dimensions
-            # Width stays same, but we preserve aspect ratio for height
             scaled_image = pygame.transform.scale(original_image, (TILE_WIDTH, TILE_SPRITE_HEIGHT))
-            
             TILE_IMAGES[tile_name] = scaled_image
-            
-        except pygame.error as e:
-            print(f"Failed to load image for tile '{tile_name}': {e}")
+        except Exception as e:
+            print(f"Failed to load image for tile '{tile_name}' at '{sprite_path}': {e}")
             # Create a fallback diamond-shaped tile
             fallback_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
-            
-            # Draw a simple diamond shape as fallback
             diamond_points = [
                 (TILE_WIDTH // 2, 0),                    # Top
                 (TILE_WIDTH - 1, TILE_HEIGHT),          # Right
                 (TILE_WIDTH // 2, TILE_SPRITE_HEIGHT - 1), # Bottom
                 (0, TILE_HEIGHT)                         # Left
             ]
-            
-            # Use tile color from TILES definition
             color = pygame.Color(tile_info.get("color", "gray"))
             pygame.draw.polygon(fallback_surface, color, diamond_points)
-            
             TILE_IMAGES[tile_name] = fallback_surface
     
     return TILE_IMAGES
@@ -204,7 +169,7 @@ def render(grid, screen=None, camera_offset=None):
         _render_frame(grid, screen, camera_offset, _TILE_IMAGES_CACHE)
 
 def _render_frame(grid, screen, camera_offset, tile_images):
-    """Internal function to render a single frame"""
+    # Debug: Print collapsed status and tile type for first few cells
     camera_offset_x, camera_offset_y = camera_offset
     screen_width, screen_height = screen.get_size()
     
@@ -212,25 +177,44 @@ def _render_frame(grid, screen, camera_offset, tile_images):
 
     # Get tiles in proper rendering order
     render_order = get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, screen_height)
-        
+
+    # Try to get terrain_data from grid if available
+    terrain_data = getattr(grid, 'terrain_data', None)
+
     for x, y in render_order:
         cell = grid[y][x]
         screen_x, screen_y = grid_to_screen(x, y, offset_x=camera_offset_x, offset_y=camera_offset_y)
-        # Adjust Y position for taller sprites
-        adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT)
+        elevation_offset = int(cell.elevation * 2.5) if hasattr(cell, 'elevation') and cell.elevation is not None else 0
+        adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) - elevation_offset
         rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
-        
+
+        # Shadow and elevation color calculation
+        shadow_alpha = 30  # much lower alpha
+        shadow_color = (0, 0, 0, shadow_alpha)
+        base_color = (255, 255, 255)
+        if terrain_data:
+            height = terrain_data.get_height(x, y)
+            slope = terrain_data.slopes[y][x] if hasattr(terrain_data, 'slopes') else 0
+            shadow_intensity = min(60, 10 + int(slope * 10))  # much lower intensity
+            shadow_color = (0, 0, 0, shadow_intensity)
+            elev_factor = max(0, min(255, 220 + int(height * 1)))  # much less color tint
+            base_color = (elev_factor, elev_factor, elev_factor)
+        else:
+            base_color = (220, 220, 220)
+
+        # Debug: Print rendering info for each cell
         if cell.collapsed:
             tile_name = cell.options[0]
             image = tile_images.get(tile_name)
             if image:
-                elevation = calculate_tile_elevation(grid, x, y)
-                adjusted_y = screen_y - (TILE_SPRITE_HEIGHT - TILE_HEIGHT) + elevation
-                rect = pygame.Rect(screen_x, adjusted_y, TILE_WIDTH, TILE_SPRITE_HEIGHT)
                 screen.blit(image, rect)
+                shadow_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
+                shadow_surface.fill(shadow_color)
+                screen.blit(shadow_surface, rect)
+                color_surface = pygame.Surface((TILE_WIDTH, TILE_SPRITE_HEIGHT), pygame.SRCALPHA)
+                color_surface.fill(base_color + (15,))  # much lower alpha
+                screen.blit(color_surface, rect)
             else:
-                # fallback: draw magenta rect if image missing
                 pygame.draw.rect(screen, (255, 0, 255), rect)
         else:
-            # uncollapsed cell: gray rectangle
             pygame.draw.rect(screen, (100, 100, 100), rect)
