@@ -1,34 +1,32 @@
 import random
 import math
+import noise
+import scipy
+import numpy as np
+import scipy.ndimage
+
 
 # Basic constraints
 SEA_LEVEL = 8
 MIN_HEIGHT = 0
-MAX_HEIGHT = 25
-STEEP_SLOPE_THRESHOLD = 4
+MAX_HEIGHT = 30
+STEEP_SLOPE_THRESHOLD = 6
 
 def simple_noise(x, y, scale=0.1):
-    # basic noise function-- will update later
     value = (
         math.sin(x * scale) * math.cos(y * scale) +
         math.sin(x * scale * 2) * math.cos(y * scale * 2) * 0.5 +
         math.sin(x * scale * 4) * math.cos(y * scale * 4) * 0.25
     )
-    # Normalize
     normalized = (value + 1.75) / 3.5
-    return (max(0, min(1, normalized)))
+    return max(0, min(1, normalized))
 
 def generate_heightmap(width, height):
-    # Generate basic heightmap from nois
     heightmap = []
-
     for y in range(height):
         row = []
         for x in range(width):
-            # noise value (0-1)
             noise_value = simple_noise(x, y, scale=0.1)
-
-            # convert to height range
             elevation = int(noise_value * MAX_HEIGHT)
             row.append(elevation)
         heightmap.append(row)

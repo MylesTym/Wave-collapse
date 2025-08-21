@@ -70,7 +70,7 @@ def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, scree
     screen_center_y = screen_height / 2
     camera_center_x, camera_center_y = screen_to_grid(screen_center_x, screen_center_y, offset_x=camera_offset_x, offset_y=camera_offset_y)
     
-    cull_radius = 50
+    cull_radius = 80
 
     for y in range(height):
         for x in range(width):

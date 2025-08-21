@@ -23,11 +23,17 @@ class StagAgent(GOAPAgent):
         self.world_state.set('energy', 100)
         self.world_state.set('energy_low', False)
         self.world_state.set('health', 100)
+        self.world_state.set('alive', True)
         self.world_state.set('awareness', 100)
         self.world_state.set('activity', 'idle')
         self.world_state.set('threatened', False)
         self.world_state.set('species', 'stag')
-    
+        self.world_state.set('hunger', 100)
+        self.world_state.set('starving', False)
+        self.world_state.set('hydration', 100)
+        self.world_state.set('thirsty', False)
+
+
     def _setup_stag_actions(self):
         from .stag_actions import WanderAction, FleeAction, StagRestAction, GuardAction
         
@@ -39,6 +45,8 @@ class StagAgent(GOAPAgent):
     def _setup_stag_goals(self):
         goals = [
             {'activity': 'wandering'},
+            {'starving': False},
+            {'thirsty': False},
             {'energy_low': False},
             {'threatened': False}
         ]

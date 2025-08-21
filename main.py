@@ -9,7 +9,7 @@ from core.agent_manager import AgentManager
 from core.terrain import generate_complete_terrain
 
 def main():
-    width, height = 60, 60
+    width, height = 80, 80
 
     print("Generating terrain data...")
     terrain_result = generate_complete_terrain(width, height)
@@ -87,7 +87,7 @@ def main():
 
     print("Initializing pygame...")
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    screen = pygame.display.set_mode((1000, 800))
     pygame.display.set_caption("WFC Map with Stag")
     clock = pygame.time.Clock()
     

@@ -22,7 +22,7 @@ TILES = {
     "shrub": {
         "sprite": "assets/resources/plants/shrub.png",
         "color": "green",
-        "weight": 4.0,
+        "weight": 1.0,
         "elevation_range": (5, 22),
         "rules": {
             "up": {"grass", "dirt", "shrub", "water"},
@@ -38,7 +38,7 @@ TILES = {
     "stone": {
         "sprite": "assets/tiles/stone.png",
         "color": "gray",
-        "weight": 0.6,
+        "weight": 0.9,
         "elevation_range": (15, 30),
         "rules": {
             "up": {"stone", "dirt", "grass", "water", "dirt"},
@@ -54,7 +54,7 @@ TILES = {
     "water": {
         "sprite": "assets/tiles/water.png",
         "color": "blue",
-        "weight": 2.9,
+        "weight": 4.0,
         "elevation_range": (0, 2),
         "rules": {
             "up": {"water", "grass", "dirt", "shrub","stone"},
@@ -71,7 +71,7 @@ TILES = {
     "dirt": {
         "sprite": "assets/tiles/dirt.png",
         "color": "black",
-        "weight": 1.3,
+        "weight": 1.0,
         "elevation_range": (3, 18),
         "rules": {
             "up": {"dirt", "stone", "grass", "water", "shrub"},

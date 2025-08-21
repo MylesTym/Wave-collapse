@@ -138,6 +138,23 @@ class WanderAction(Action):
         else:
             agent.world_state.set('threatened', False)
 
+        current_thirst = agent.world_state.get('hydration', 100)
+        thirst_cost = 4 * dt
+        new_thirst = max(0, current_thirst - thirst_cost)
+        agent.world_state.set('hydration', new_thirst)
+
+        if new_thirst < 25:
+            agent.world_state.set('thirsty', True)
+        else:
+            agent.world_state.set('thirsty', False)
+
+        # Decrease health if starving or thirsty
+        if agent.world_state.get('starving', False) or agent.world_state.get('thirsty', False):
+            current_health = agent.world_state.get('health', 100)
+            health_loss = 6 * dt
+            new_health = max(0, current_health - health_loss)
+            agent.world_state.set('health', new_health)
+
         return self.state
 
 
@@ -306,11 +323,40 @@ class FleeAction(Action):
         else:
             agent.world_state.set('threatened', False)
         
+        current_thirst = agent.world_state.get('hydration', 100)
+        thirst_cost = 4 * dt
+        new_thirst = max(0, current_thirst - thirst_cost)
+        agent.world_state.set('hydration', new_thirst)
+
+        if new_thirst < 25:
+            agent.world_state.set('thirsty', True)
+        else:
+            agent.world_state.set('thirsty', False)
+
+        current_hunger = agent.world_state.get('hunger', 100)
+        hunger_cost = 2 * dt
+        new_hunger = max(0, current_hunger - hunger_cost)
+        agent.world_state.set('hunger', new_hunger)
+
+        if new_hunger < 25:
+            agent.world_state.set('starving', True)
+        else:
+            agent.world_state.set('starving', False)
+        
+        # Decrease health if starving or thirsty
+        if agent.world_state.get('starving', False) or agent.world_state.get('thirsty', False):
+            current_health = agent.world_state.get('health', 100)
+            health_loss = 6 * dt
+            new_health = max(0, current_health - health_loss)
+            agent.world_state.set('health', new_health)
+
+        if agent.world_state.get('alive', False):
+            agent.agent_manager.remove_agent(self)
+
         return self.state
 
 
 class StagRestAction(Action):
-    """Stag-specific rest action that restores energy and health."""
     
     def __init__(self, rest_duration: float = 4.0):
         super().__init__("StagRest", cost=0.5)
