@@ -23,6 +23,7 @@ TILES = {
         "sprite": "assets/resources/plants/shrub.png",
         "color": "green",
         "weight": 1.0,
+        "resource_amount": 5,
         "elevation_range": (5, 22),
         "rules": {
             "up": {"grass", "dirt", "shrub", "water"},
@@ -55,7 +56,8 @@ TILES = {
         "sprite": "assets/tiles/water.png",
         "color": "blue",
         "weight": 4.0,
-        "elevation_range": (0, 2),
+        "resource_amount": 10,
+        "elevation_range": (3, 8),
         "rules": {
             "up": {"water", "grass", "dirt", "shrub","stone"},
             "down": {"water", "grass", "dirt", "shrub", "stone"},

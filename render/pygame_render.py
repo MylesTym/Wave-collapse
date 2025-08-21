@@ -70,7 +70,7 @@ def get_render_order(grid, camera_offset_x, camera_offset_y, screen_width, scree
     screen_center_y = screen_height / 2
     camera_center_x, camera_center_y = screen_to_grid(screen_center_x, screen_center_y, offset_x=camera_offset_x, offset_y=camera_offset_y)
     
-    cull_radius = 80
+    cull_radius = 50
 
     for y in range(height):
         for x in range(width):
@@ -218,3 +218,16 @@ def _render_frame(grid, screen, camera_offset, tile_images):
                 pygame.draw.rect(screen, (255, 0, 255), rect)
         else:
             pygame.draw.rect(screen, (100, 100, 100), rect)
+
+        # Resource depletion visual check
+        if hasattr(cell, 'resource_amount'):
+            if tile_name == 'water' and cell.resource_amount == 0:
+                render_resource_depletion(screen, rect, cell)
+            elif tile_name == 'shrub' and cell.resource_amount == 0:
+                cell.options[0] = 'grass'  # Change shrub to grass if depleted
+                # Optionally, you could also update other cell properties here
+
+def render_resource_depletion(screen, rect, cell):
+    """Render a visual indicator for resource depletion on water tiles"""
+    depletion_color = (0, 0, 255, 128)  # Semi-transparent blue
+    pygame.draw.rect(screen, depletion_color, rect)

@@ -35,20 +35,30 @@ class StagAgent(GOAPAgent):
 
 
     def _setup_stag_actions(self):
-        from .stag_actions import WanderAction, FleeAction, StagRestAction, GuardAction
-        
+        from .stag_actions import WanderAction, FleeAction, StagRestAction, GuardAction, StagResourceAction
+
+        self.available_actions = []
+
         self.add_action(WanderAction(max_wander_distance=15))
         self.add_action(StagRestAction(rest_duration=5.0))
         self.add_action(FleeAction(flee_distance=10))
         self.add_action(GuardAction(guard_duration=3.0))
-    
+        self.add_action(StagResourceAction(idle_duration=2.0))
+
+        print(f"Total actions: {len(self.available_actions)}")
+        resource_actions = [a for a in self.available_actions if a.name == 'Resource']
+        print(f"Resource actions: {len(resource_actions)}")
+
+
+
     def _setup_stag_goals(self):
         goals = [
-            {'activity': 'wandering'},
             {'starving': False},
             {'thirsty': False},
+            {'threatened': False},
             {'energy_low': False},
-            {'threatened': False}
+            {'activity': 'wandering'}
+
         ]
         self.set_goals(goals)
         
@@ -117,22 +127,29 @@ class StagAgent(GOAPAgent):
     def _select_next_goal(self):
         threatened = self.world_state.get('threatened', False)
         energy_low = self.world_state.get('energy_low', False)
+        starving = self.world_state.get('starving', False)
+        thirsty = self.world_state.get('thirsty', False)
         current_activity = self.world_state.get('activity', 'idle')
         
-        if threatened:
+        if self.world_state.get('starving', False):
+            self.current_goal = {'starving': False}
+            print(f"Starving, setting eat goal: {self.current_goal}")
+        elif self.world_state.get('thirsty', False):
+            self.current_goal = {'thirsty': False}
+            print(f"Thirsty, setting drink goal: {self.current_goal}")
+        elif self.world_state.get('threatened', False):
             self.current_goal = {'threatened': False}
             print(f"Threatened, setting guard goal: {self.current_goal}")
-        elif energy_low:
+        elif self.world_state.get('energy_low', False):
             self.current_goal = {'energy_low': False}
             print(f"Energy is low, setting rest goal: {self.current_goal}")
         else:
-            # Only set wandering goal if not already wandering
+            current_activity = self.world_state.get('activity', 'idle')
             if current_activity != 'wandering':
                 self.current_goal = {'activity': 'wandering'}
                 print(f"Energy OK, setting wander goal: {self.current_goal}")
             else:
-                # Already wandering, maybe set a different goal or keep current
-                self.current_goal = {'activity': 'wandering'}
+                self.current_goal = {'activity': 'wandering'}      
     
     def update(self, dt: float):
         if not self.planning_enabled:
@@ -150,7 +167,7 @@ class StagAgent(GOAPAgent):
             
             if action_state == ActionState.SUCCESS:
                 print(f"Action {self.current_action.name} completed successfully")
-                if self.current_plan and self.current_plan[0] == self.current_plan:
+                if self.current_plan and self.current_plan[0] == self.current_action:
                     self.current_plan.pop(0)
                 self.current_action = None
             elif action_state == ActionState.FAILURE:
@@ -195,7 +212,7 @@ class StagAgent(GOAPAgent):
 
         # Thirst drain
         current_thirst = self.world_state.get('hydration', 100)
-        thirst_cost = 4 * dt
+        thirst_cost = 1 * dt
         new_thirst = max(0, current_thirst - thirst_cost)
         self.world_state.set('hydration', new_thirst)
         if new_thirst < 25:
@@ -292,11 +309,15 @@ class StagAgent(GOAPAgent):
         text_x = int(screen_x)
         text_y = int(screen_y - 50 + elevation)
         
+
+        # STAG STAT OVERLAY
         energy = self.world_state.get('energy', 100)
         awareness = self.world_state.get('awareness', 100)
         activity = self.world_state.get('activity', 'idle')
-        
-        info_text = f"E:{int(energy)} AW:{int(awareness)} A:{activity}"
+        hunger = self.world_state.get('hunger', 100)
+        hydration = self.world_state.get('hydration', 100)
+        health = self.world_state.get('health', 100)
+        info_text = f"E:{int(energy)} AW:{int(awareness)} HR:{int(hunger)} HY:{int(hydration)} HL:{int(health)} A:{activity}"
         text = font.render(info_text, True, (255, 255, 255))
         screen.blit(text, (text_x - text.get_width() // 2, text_y))
         

@@ -13,6 +13,10 @@ class AgentManager:
         if agent in self.agents:
             self.agents.remove(agent)
     
+    def remove_agent(self, agent):
+        if agent in self.agents:
+            self.agents.remove(agent)
+    
     def get_all_agents(self) -> List[GOAPAgent]:
         return self.agents.copy()
     
@@ -30,7 +34,7 @@ class AgentManager:
                     nearby_agents.append(agent)
             except (AttributeError, TypeError):
                 continue
-            return nearby_agents
+        return nearby_agents
     
     def get_agents_in_range_by_species(self, position: Tuple[int, int], range_distance: int, species: str, exclude_agent=None) -> List[GOAPAgent]:
         nearby_agents = self.get_agents_in_range(position, range_distance, exclude_agent)

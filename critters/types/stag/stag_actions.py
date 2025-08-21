@@ -1,9 +1,8 @@
 import random
 import math
 from typing import Tuple, Optional, List
-from ...actions import Action, ActionState
+from ...actions import Action, ActionState, MoveToAction
 from ...world_state import WorldState
-
 
 class WanderAction(Action):
     
@@ -401,3 +400,100 @@ class GuardAction(Action):
             self.state = ActionState.SUCCESS
 
         return self.state
+
+class StagResourceAction(Action):
+
+    def __init__(self, idle_duration=2.0):
+        super().__init__("Resource", cost=0.5)
+        self.target_tile = None
+        self.idle_time = 0.0
+        self.idle_duration = idle_duration
+        self.completed = False
+        self.path = None
+        self.path_index = 0
+        self.add_effect('starving', False)
+        self.add_effect('thirsty', False)
+        self.add_effect('activity', 'resource')
+
+    def can_run(self, agent) -> bool:
+        starving = agent.world_state.get('starving', False)
+        thirsty = agent.world_state.get('thirsty', False)
+        return starving or thirsty
+
+    def start(self, agent) -> bool:
+        self.target_tile = self._find_nearest_resource_tile(agent)
+        self.idle_time = 0.0
+        self.completed = False
+        if self.target_tile is None:
+            return False
+        if self.target_tile == agent.get_position():
+            self.state = ActionState.RUNNING
+            return True
+        
+        self.move_action = MoveToAction(self.target_tile)
+        if not self.move_action.start(agent):
+            return False
+        self.state = ActionState.RUNNING
+        return True
+
+    def update(self, agent, dt):
+        if self.completed:
+            return ActionState.SUCCESS
+        if not self.target_tile:
+            return ActionState.FAILURE
+        if self.path and self.path_index < len(self.path):
+            print(f"Path index: {self.path_index}/{len(self.path)}")
+            current_world_pos = agent.get_world_position()
+            target_grid = self.path[self.path_index]
+            print(f"Moving to: {target_grid}, Current: {current_world_pos}")
+            target_world_pos = agent.map_interface.grid_to_world(*target_grid)
+            dx = target_world_pos[0] - current_world_pos[0]
+            dy = target_world_pos[1] - current_world_pos[1]
+            distance = math.sqrt(dx * dx + dy * dy)
+            if distance < 8:
+                self.path_index += 1
+                agent.world_state.set('world_position', target_world_pos)
+            else:
+                move_x = (dx / distance) * 60.0 * dt
+                move_y = (dy / distance) * 60.0 * dt
+                new_pos = (current_world_pos[0] + move_x, current_world_pos[1] + move_y)
+                agent.world_state.set('world_position', new_pos)
+            return ActionState.RUNNING
+        tile = agent.map_interface.get_tile_at(self.target_tile[0], self.target_tile[1])
+        if not tile or not tile.options:
+            return ActionState.FAILURE
+        self.idle_time += dt
+        if self.idle_time >= self.idle_duration:
+            hunger = agent.world_state.get('hunger', 100)
+            hydration = agent.world_state.get('hydration', 100)
+            if tile.options[0] == 'shrub' and hunger < 50:
+                agent.world_state.set('hunger', min(100, hunger + 30))
+                agent.world_state.set('starving', False)
+            elif tile.options[0] == 'water' and hydration < 50:
+                agent.world_state.set('hydration', min(100, hydration + 30))
+                agent.world_state.set('thirsty', False)
+            self.completed = True
+            return ActionState.SUCCESS
+        return ActionState.RUNNING
+
+    def _find_nearest_resource_tile(self, agent):
+        hunger = agent.world_state.get('hunger', 100)
+        hydration = agent.world_state.get('hydration', 100)
+        search_types = []
+        if hunger < 50:
+            search_types.append('shrub')
+        if hydration < 50:
+            search_types.append('water')
+        best_tile_pos = None
+        agent_pos = agent.get_position()
+        for dx in range(-10, 11):
+            for dy in range(-10, 11):
+                check_pos = (agent_pos[0] + dx, agent_pos[1] + dy)
+                tile = agent.map_interface.get_tile_at(check_pos[0], check_pos[1])
+
+                if tile and tile.options and tile.options[0] in search_types:
+                    best_tile_pos = check_pos
+                    break
+            if best_tile_pos:
+                break
+        return best_tile_pos

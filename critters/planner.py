@@ -149,18 +149,16 @@ class GOAPPlanner:
         # Simple check: do we have actions that produce needed effects?
         for goal_key, goal_value in goal.items():
             if current_state.get(goal_key) != goal_value:
-                # Look for action that can produce this effect
+                # Look for action that can produce this effect (superset allowed)
                 can_produce = False
                 for action in available_actions:
-                    if (action.is_valid(current_state, agent) and 
-                        goal_key in action.effects and 
-                        action.effects[goal_key] == goal_value):
-                        can_produce = True
-                        break
-                
+                    if action.is_valid(current_state, agent):
+                        # All goal keys/values must be present in effects
+                        if all(k in action.effects and action.effects[k] == v for k, v in goal.items()):
+                            can_produce = True
+                            break
                 if not can_produce:
                     return False
-        
         return True
     
     def get_plan_cost(self, plan: List[Action], start_state: WorldState, agent) -> float:

@@ -9,7 +9,7 @@ from core.agent_manager import AgentManager
 from core.terrain import generate_complete_terrain
 
 def main():
-    width, height = 80, 80
+    width, height = 30, 30
 
     print("Generating terrain data...")
     terrain_result = generate_complete_terrain(width, height)
