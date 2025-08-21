@@ -127,26 +127,6 @@ class WanderAction(Action):
             agent.world_state.set('energy_low', True)
         else:
             agent.world_state.set('energy_low', False)
-        
-        current_awareness = agent.world_state.get('awareness', 100)
-        awareness_cost = 3 * dt * agent.get_awareness_modifier()
-        new_awareness = max(0, current_awareness - awareness_cost)
-        agent.world_state.set('awareness', new_awareness)
-
-        if new_awareness < 20:
-            agent.world_state.set('threatened', True)
-        else:
-            agent.world_state.set('threatened', False)
-
-        current_thirst = agent.world_state.get('hydration', 100)
-        thirst_cost = 4 * dt
-        new_thirst = max(0, current_thirst - thirst_cost)
-        agent.world_state.set('hydration', new_thirst)
-
-        if new_thirst < 25:
-            agent.world_state.set('thirsty', True)
-        else:
-            agent.world_state.set('thirsty', False)
 
         # Decrease health if starving or thirsty
         if agent.world_state.get('starving', False) or agent.world_state.get('thirsty', False):
@@ -313,45 +293,14 @@ class FleeAction(Action):
         else:
             agent.world_state.set('energy_low', False)
         
-        current_awareness = agent.world_state.get('awareness', 100)
-        awareness_cost = 3 * dt * agent.get_awareness_modifier()
-        new_awareness = max(100, current_awareness + awareness_cost)
-        agent.world_state.set('awareness', new_awareness)
-
-        if new_awareness < 20:
-            agent.world_state.set('threatened', True)
-        else:
-            agent.world_state.set('threatened', False)
-        
-        current_thirst = agent.world_state.get('hydration', 100)
-        thirst_cost = 4 * dt
-        new_thirst = max(0, current_thirst - thirst_cost)
-        agent.world_state.set('hydration', new_thirst)
-
-        if new_thirst < 25:
-            agent.world_state.set('thirsty', True)
-        else:
-            agent.world_state.set('thirsty', False)
-
-        current_hunger = agent.world_state.get('hunger', 100)
-        hunger_cost = 2 * dt
-        new_hunger = max(0, current_hunger - hunger_cost)
-        agent.world_state.set('hunger', new_hunger)
-
-        if new_hunger < 25:
-            agent.world_state.set('starving', True)
-        else:
-            agent.world_state.set('starving', False)
-        
         # Decrease health if starving or thirsty
         if agent.world_state.get('starving', False) or agent.world_state.get('thirsty', False):
             current_health = agent.world_state.get('health', 100)
             health_loss = 6 * dt
             new_health = max(0, current_health - health_loss)
             agent.world_state.set('health', new_health)
-
-        if agent.world_state.get('alive', False):
-            agent.agent_manager.remove_agent(self)
+        
+        
 
         return self.state
 
@@ -407,16 +356,6 @@ class StagRestAction(Action):
         
         if self.start_time >= self.duration:
             self.state = ActionState.SUCCESS
-        
-        current_awareness = agent.world_state.get('awareness', 100)
-        awareness_cost = 1 * dt * agent.get_awareness_modifier()
-        new_awareness = max(0, current_awareness - awareness_cost)
-        agent.world_state.set('awareness', new_awareness)
-
-        if new_awareness < 20:
-            agent.world_state.set('threatened', True)
-        else:
-            agent.world_state.set('threatened', False)
         
         return self.state
 

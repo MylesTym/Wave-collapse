@@ -183,6 +183,49 @@ class StagAgent(GOAPAgent):
         elif not self.current_action:
             print("No current action and no plan")
         
+        # Hunger drain
+        current_hunger = self.world_state.get('hunger', 100)
+        hunger_cost = 4 * dt
+        new_hunger = max(0, current_hunger - hunger_cost)
+        self.world_state.set('hunger', new_hunger)
+        if new_hunger < 25:
+            self.world_state.set('starving', True)
+        else:
+            self.world_state.set('starving', False)
+
+        # Thirst drain
+        current_thirst = self.world_state.get('hydration', 100)
+        thirst_cost = 4 * dt
+        new_thirst = max(0, current_thirst - thirst_cost)
+        self.world_state.set('hydration', new_thirst)
+        if new_thirst < 25:
+            self.world_state.set('thirsty', True)
+        else:
+            self.world_state.set('thirsty', False)
+
+        # Decrease health if starving or thirsty
+        if self.world_state.get('starving', False) or self.world_state.get('thirsty', False):
+            current_health = self.world_state.get('health', 100)
+            health_loss = 6 * dt
+            new_health = max(0, current_health - health_loss)
+            self.world_state.set('health', new_health)
+            # Despawn agent if health is zero
+            if new_health <= 0:
+                self.world_state.set('alive', False)
+                if hasattr(self, 'agent_manager') and self.agent_manager:
+                    self.agent_manager.remove_agent(self)
+                return
+        
+        # Awareness drain
+        current_awareness = self.world_state.get('awareness', 100)
+        awareness_cost = 3 * dt * self.get_awareness_modifier()
+        new_awareness = max(0, current_awareness - awareness_cost)
+        self.world_state.set('awareness', new_awareness)
+        if new_awareness < 20:
+            self.world_state.set('threatened', True)
+        else:
+            self.world_state.set('threatened', False)
+        
         print(f"Position: {self.get_position()}, World: {self.get_world_position()}")
         
         if self.debug_mode:
